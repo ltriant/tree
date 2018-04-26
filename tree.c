@@ -13,6 +13,7 @@ static void indent(size_t level, const char *prefix, const char *thing)
 {
 	for (; level > 0; level--) {
 		putchar(' ');
+		putchar(' ');
 	}
 
 	printf("%s %s\n", prefix, thing);
@@ -30,7 +31,7 @@ static size_t print_directories(DIR *dh, const char *parent_dir, size_t level)
 
 		switch (ent->d_type) {
 		case DT_DIR:
-			indent(level + 1, "\u2514\u2500", ent->d_name);
+			indent(level + 1, "\u2514\u2500\u2500", ent->d_name);
 
 			char *new_dir;
 			int rv = asprintf(&new_dir, "%s/%s", parent_dir, ent->d_name);
@@ -66,8 +67,8 @@ static void print_files(DIR *dh, size_t level, size_t n_files)
 		case DT_LNK:
 			n_files -= 1;
 			const char *pref = n_files == 0
-				? "  \u2514\u2500" 
-				: "  \u251c\u2500";
+				? "  \u2514\u2500\u2500" 
+				: "  \u251c\u2500\u2500";
 			indent(level + 1, pref, ent->d_name);
 			break;
 		}
