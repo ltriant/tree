@@ -9,11 +9,6 @@ bool directories_only = false;
 
 static void print_tree(const char *dir, size_t level);
 
-struct file_list {
-	char filename[1024];
-	struct file_list *next;
-};
-
 static void indent(size_t level, const char *prefix, const char *thing)
 {
 	for (; level > 0; level--) {
@@ -27,8 +22,9 @@ static void indent(size_t level, const char *prefix, const char *thing)
 static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 {
 	struct dirent *ent;
-	struct file_list *files = NULL;
-	struct file_list *last = NULL;
+	size_t cap = 64;
+	size_t n = 0;
+	char **files = calloc(cap, sizeof(char *));
 
 	while ((ent = readdir(dh)) != NULL) {
 		if (index(ent->d_name, '.') == ent->d_name) {
@@ -56,29 +52,26 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 				break;
 			}
 
-			if (!files) {
-				files = malloc(sizeof(struct file_list));
-				strncpy(files->filename, ent->d_name, 1024);
-				files->next = NULL;
-				last = files;
-			} else {
-				last->next = malloc(sizeof(struct file_list));
-				strncpy(last->next->filename, ent->d_name, 1024);
-				last->next->next = NULL;
-				last = last->next;
+			files[n] = calloc(1024, sizeof(char));
+			strncpy(files[n], ent->d_name, 1024);
+			n += 1;
+
+			if (n == cap) {
+				cap += 10;
+				files = realloc(files, cap * sizeof(char *));
 			}
 
 			break;
 		}
 	}
 
-	if (files) {
-		struct file_list *ptr = files;
-		while (ptr->next) {
-			indent(level + 1, "\u251c\u2500\u2500", ptr->filename);
-			ptr = ptr->next;
+	if (n > 0) {
+		for (size_t i = 0; i < n - 1; i += 1) {
+			indent(level + 1, "\u251c\u2500\u2500", files[i]);
+			free(files[i]);
 		}
-		indent(level + 1, "\u2514\u2500\u2500", ptr->filename);
+		indent(level + 1, "\u2514\u2500\u2500", files[n-1]);
+		free(files[n-1]);
 	}
 
 	free(files);
