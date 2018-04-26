@@ -9,6 +9,11 @@ bool directories_only = false;
 
 static void print_tree(const char *dir, size_t level);
 
+struct file_list {
+	char filename[1024];
+	struct file_list *next;
+};
+
 static void indent(size_t level, const char *prefix, const char *thing)
 {
 	for (; level > 0; level--) {
@@ -19,10 +24,11 @@ static void indent(size_t level, const char *prefix, const char *thing)
 	printf("%s %s\n", prefix, thing);
 }
 
-static size_t print_directories(DIR *dh, const char *parent_dir, size_t level)
+static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 {
 	struct dirent *ent;
-	size_t n_files = 0;
+	struct file_list *files = NULL;
+	struct file_list *last = NULL;
 
 	while ((ent = readdir(dh)) != NULL) {
 		if (index(ent->d_name, '.') == ent->d_name) {
@@ -46,33 +52,36 @@ static size_t print_directories(DIR *dh, const char *parent_dir, size_t level)
 
 		case DT_REG:
 		case DT_LNK:
-			n_files += 1;
-		}
-	}
+			if (directories_only) {
+				break;
+			}
 
-	return n_files;
-}
+			if (!files) {
+				files = malloc(sizeof(struct file_list));
+				strncpy(files->filename, ent->d_name, 1024);
+				files->next = NULL;
+				last = files;
+			} else {
+				last->next = malloc(sizeof(struct file_list));
+				strncpy(last->next->filename, ent->d_name, 1024);
+				last->next->next = NULL;
+				last = last->next;
+			}
 
-static void print_files(DIR *dh, size_t level, size_t n_files)
-{
-	struct dirent *ent;
-
-	while ((ent = readdir(dh)) != NULL) {
-		if (index(ent->d_name, '.') == ent->d_name) {
-			continue;
-		}
-
-		switch (ent->d_type) {
-		case DT_REG:
-		case DT_LNK:
-			n_files -= 1;
-			const char *pref = n_files == 0
-				? "  \u2514\u2500\u2500" 
-				: "  \u251c\u2500\u2500";
-			indent(level + 1, pref, ent->d_name);
 			break;
 		}
 	}
+
+	if (files) {
+		struct file_list *ptr = files;
+		while (ptr->next) {
+			indent(level + 1, "\u251c\u2500\u2500", ptr->filename);
+			ptr = ptr->next;
+		}
+		indent(level + 1, "\u2514\u2500\u2500", ptr->filename);
+	}
+
+	free(files);
 }
 
 static void print_tree(const char *dir, size_t level)
@@ -85,13 +94,7 @@ static void print_tree(const char *dir, size_t level)
 		exit(1);
 	}
 
-	size_t n_files = print_directories(dh, dir, level);
-
-	if (!directories_only) {
-		seekdir(dh, 0);
-		print_files(dh, level, n_files);
-	}
-
+	crawl_and_print(dh, dir, level);
 	closedir(dh);
 }
 
