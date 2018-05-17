@@ -12,6 +12,6 @@ clean:
 	$(RM) -v $(OBJ) tree
 
 install: tree
-	$(INSTALL_PROGRAM) -Cs tree $(DESTDIR)$(PREFIX)/bin/tree
+	$(INSTALL_PROGRAM) -s tree $(DESTDIR)$(PREFIX)/bin/tree
 
 all: tree
