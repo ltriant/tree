@@ -1,4 +1,7 @@
+#define _GNU_SOURCE
+
 #include <dirent.h>
+#include <getopt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +30,7 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 	char **files = calloc(cap, sizeof(char *));
 
 	while ((ent = readdir(dh)) != NULL) {
-		if (index(ent->d_name, '.') == ent->d_name) {
+		if (strchr(ent->d_name, '.') == ent->d_name) {
 			continue;
 		}
 
