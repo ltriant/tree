@@ -15,5 +15,5 @@ But I like to install it to the `bin` directory of my home directory:
 
 ```
 $ make
-$ make PREFIX=~ install
+$ make install PREFIX=~
 ```
