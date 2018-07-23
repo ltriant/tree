@@ -116,6 +116,8 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 	}
 
 	if (!dirent_list_is_empty(&files)) {
+		dirent_list_sort(&files);
+
 		struct dirent_item **items = files.entities;
 		size_t last = files.cur - 1;
 

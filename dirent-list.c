@@ -138,3 +138,40 @@ void dirent_list_destroy(struct dirent_list *ents)
 
 	free(ents->entities);
 }
+
+static inline char *item_string(struct dirent_item *a)
+{
+	switch (a->type) {
+	case DIRENT_FILE:
+		return ((struct dirent_file *)(a->data))->path;
+	case DIRENT_LINK:
+		return ((struct dirent_link *)(a->data))->source;
+	}
+}
+
+static inline int item_compare(struct dirent_item *a, struct dirent_item *b)
+{
+	char *x = item_string(a);
+	char *y = item_string(b);
+	return strncasecmp(x, y, DIRENT_NAME_LENGTH);
+}
+
+void dirent_list_sort(struct dirent_list *ents)
+{
+	// Insertion sort, with a modification to remove a temporary variable
+	// assignment in the inner loop.
+
+	size_t i = 1;
+	while (i < ents->cur) {
+		struct dirent_item *item = ents->entities[i];
+
+		ssize_t j = i - 1;
+		while ((j >= 0) && (item_compare(ents->entities[j], item) > 0)) {
+			ents->entities[j+1] = ents->entities[j];
+			j -= 1;
+		}
+
+		ents->entities[j+1] = item;
+		i += 1;
+	}
+}

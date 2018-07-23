@@ -57,4 +57,7 @@ void dirent_list_push_link(struct dirent_list *, const char *, const struct dire
 // Destructor
 void dirent_list_destroy(struct dirent_list *);
 
+// Sort a list of entities in ascending, case-insensitive order
+void dirent_list_sort(struct dirent_list *);
+
 #endif
