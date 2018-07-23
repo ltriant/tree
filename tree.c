@@ -11,6 +11,7 @@
 #include "dirent-list.h"
 
 bool directories_only = false;
+bool reverse_sort = false;
 size_t max_depth = 0;
 
 static void print_tree(const char *dir, size_t level);
@@ -117,15 +118,25 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 
 	if (!dirent_list_is_empty(&files)) {
 		dirent_list_sort(&files);
-
 		struct dirent_item **items = files.entities;
-		size_t last = files.cur - 1;
 
-		for (size_t i = 0; i < last; i += 1) {
-			indent_item(level + 1, "\u251c\u2500\u2500", items[i]);
+		if (reverse_sort) {
+			size_t last = files.cur - 1;
+
+			for (size_t i = last; i > 0; i -= 1) {
+				indent_item(level + 1, "\u251c\u2500\u2500", items[i]);
+			}
+
+			indent_item(level + 1, "\u2514\u2500\u2500", items[0]);
+		} else {
+			size_t last = files.cur - 1;
+
+			for (size_t i = 0; i < last; i += 1) {
+				indent_item(level + 1, "\u251c\u2500\u2500", items[i]);
+			}
+
+			indent_item(level + 1, "\u2514\u2500\u2500", items[last]);
 		}
-
-		indent_item(level + 1, "\u2514\u2500\u2500", items[last]);
 	}
 
 	dirent_list_destroy(&files);
@@ -153,13 +164,14 @@ static void usage(void)
 	printf("usage: tree [-dh] [-L level] [directory]\n");
 	printf("  -d        Show directories only\n");
 	printf("  -L level  Descend only `level' directories deep\n");
+	printf("  -r        Sort in reverse alphabetic order\n");
 	printf("  -h        This help message\n");
 }
 
 int main(int argc, char **argv)
 {
 	int ch;
-	while ((ch = getopt(argc, argv, "dhL:")) != -1) {
+	while ((ch = getopt(argc, argv, "dhL:r")) != -1) {
 		switch (ch) {
 		case 'd':
 			directories_only = true;
@@ -167,6 +179,10 @@ int main(int argc, char **argv)
 
 		case 'L':
 			max_depth = atoi(optarg);
+			break;
+
+		case 'r':
+			reverse_sort = true;
 			break;
 
 		case 'h':
