@@ -11,6 +11,7 @@
 #include "dirent-list.h"
 
 bool directories_only = false;
+size_t max_depth = 0;
 
 static void print_tree(const char *dir, size_t level);
 
@@ -130,6 +131,9 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 
 static void print_tree(const char *dir, size_t level)
 {
+	if ((max_depth > 0) && (level == max_depth))
+		return;
+
 	DIR *dh = opendir(dir);
 
 	if (!dh) {
@@ -144,18 +148,23 @@ static void print_tree(const char *dir, size_t level)
 
 static void usage(void)
 {
-	printf("usage: tree [-dh] [directory]\n");
-	printf("  -d  directories only\n");
-	printf("  -h  this help message\n");
+	printf("usage: tree [-dh] [-L level] [directory]\n");
+	printf("  -d        Show directories only\n");
+	printf("  -L level  Descend only `level' directories deep\n");
+	printf("  -h        This help message\n");
 }
 
 int main(int argc, char **argv)
 {
 	int ch;
-	while ((ch = getopt(argc, argv, "dh")) != -1) {
+	while ((ch = getopt(argc, argv, "dhL:")) != -1) {
 		switch (ch) {
 		case 'd':
 			directories_only = true;
+			break;
+
+		case 'L':
+			max_depth = atoi(optarg);
 			break;
 
 		case 'h':
