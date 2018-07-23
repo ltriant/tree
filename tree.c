@@ -8,6 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "dirent-list.h"
+
 bool directories_only = false;
 
 static void print_tree(const char *dir, size_t level);
@@ -22,12 +24,53 @@ static void indent(size_t level, const char *prefix, const char *thing)
 	printf("%s %s\n", prefix, thing);
 }
 
+static void indent_file(size_t level, const char *prefix, const struct dirent_file *file)
+{
+	for (; level > 0; level--) {
+		putchar(' ');
+		putchar(' ');
+	}
+
+	printf("%s %s\n", prefix, file->path);
+}
+
+static void indent_link(size_t level, const char *prefix, const struct dirent_link *lnk)
+{
+	for (; level > 0; level--) {
+		putchar(' ');
+		putchar(' ');
+	}
+
+	printf("%s %s -> %s\n", prefix, lnk->source, lnk->destination);
+}
+
+static void indent_item(size_t level, const char *prefix, const struct dirent_item *item)
+{
+	switch (item->type) {
+
+	case DIRENT_FILE:
+	{
+		struct dirent_file *last_file = (struct dirent_file *)item->data;
+		indent_file(level, prefix, last_file);
+		break;
+	}
+
+	case DIRENT_LINK:
+	{
+		struct dirent_link *last_file = (struct dirent_link *)item->data;
+		indent_link(level, prefix, last_file);
+		break;
+	}
+
+	}
+}
+
 static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 {
 	struct dirent *ent;
-	size_t cap = 64;
-	size_t n = 0;
-	char **files = calloc(cap, sizeof(char *));
+
+	struct dirent_list files;
+	dirent_list_init(&files);
 
 	while ((ent = readdir(dh)) != NULL) {
 		if (strchr(ent->d_name, '.') == ent->d_name) {
@@ -49,35 +92,40 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 			free(new_dir);
 			break;
 
+		case DT_FIFO:
+		case DT_CHR:
+		case DT_BLK:
 		case DT_REG:
-		case DT_LNK:
-			if (directories_only) {
+		case DT_SOCK:
+			if (directories_only)
 				break;
-			}
 
-			files[n] = calloc(1024, sizeof(char));
-			strncpy(files[n], ent->d_name, 1024);
-			n += 1;
+			dirent_list_push_file(&files, ent);
 
-			if (n == cap) {
-				cap += 10;
-				files = realloc(files, cap * sizeof(char *));
-			}
+			break;
+
+		case DT_LNK:
+			if (directories_only)
+				break;
+
+			dirent_list_push_link(&files, parent_dir, ent);
 
 			break;
 		}
 	}
 
-	if (n > 0) {
-		for (size_t i = 0; i < n - 1; i += 1) {
-			indent(level + 1, "\u251c\u2500\u2500", files[i]);
-			free(files[i]);
+	if (!dirent_list_is_empty(&files)) {
+		struct dirent_item **items = files.entities;
+		size_t last = files.cur - 1;
+
+		for (size_t i = 0; i < last; i += 1) {
+			indent_item(level + 1, "\u251c\u2500\u2500", items[i]);
 		}
-		indent(level + 1, "\u2514\u2500\u2500", files[n-1]);
-		free(files[n-1]);
+
+		indent_item(level + 1, "\u2514\u2500\u2500", items[last]);
 	}
 
-	free(files);
+	dirent_list_destroy(&files);
 }
 
 static void print_tree(const char *dir, size_t level)
@@ -120,12 +168,13 @@ int main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	char dir[1024];
+	char dir[DIRENT_NAME_LENGTH+1];
+	memset(dir, 0, DIRENT_NAME_LENGTH+1);
 
 	if (argc > 0) {
-		strncpy(dir, argv[0], 1024);
+		strncpy(dir, argv[0], DIRENT_NAME_LENGTH);
 	} else {
-		char *rv = getcwd(dir, 1024);
+		char *rv = getcwd(dir, DIRENT_NAME_LENGTH);
 		
 		if (!rv) {
 			perror("getcwd");
