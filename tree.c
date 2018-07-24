@@ -161,7 +161,7 @@ static void print_tree(const char *dir, size_t level)
 
 static void usage(void)
 {
-	printf("usage: tree [-dh] [-L level] [directory]\n");
+	printf("usage: tree [-drh] [-L level] [directory]\n");
 	printf("  -d        Show directories only\n");
 	printf("  -L level  Descend only `level' directories deep\n");
 	printf("  -r        Sort in reverse alphabetic order\n");
