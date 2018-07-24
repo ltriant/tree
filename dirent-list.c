@@ -141,12 +141,16 @@ void dirent_list_destroy(struct dirent_list *ents)
 
 static inline char *item_string(struct dirent_item *a)
 {
+	char *rv;
+
 	switch (a->type) {
 	case DIRENT_FILE:
-		return ((struct dirent_file *)(a->data))->path;
+		rv = ((struct dirent_file *)(a->data))->path;
 	case DIRENT_LINK:
-		return ((struct dirent_link *)(a->data))->source;
+		rv = ((struct dirent_link *)(a->data))->source;
 	}
+
+	return rv;
 }
 
 static inline int item_compare(struct dirent_item *a, struct dirent_item *b)
