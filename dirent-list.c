@@ -17,6 +17,11 @@ static void extend_list(struct dirent_list *ents)
 	if (ents->cur == cap) {
 		size_t new_cap = cap + 10;
 		ents->entities = realloc(ents->entities, new_cap * sizeof(struct dirent_item *));
+		if (!ents->entities) {
+			perror("realloc");
+			exit(1);
+		}
+
 		ents->cap = new_cap;
 	}
 }
@@ -27,6 +32,10 @@ void dirent_list_init(struct dirent_list *ents)
 	ents->cap = cap;
 	ents->cur = 0;
 	ents->entities = calloc(cap, sizeof(struct dirent_item *));
+	if (!ents->entities) {
+		perror("calloc");
+		exit(1);
+	}
 }
 
 bool dirent_list_is_empty(struct dirent_list *ents)
@@ -38,10 +47,24 @@ void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
 {
 	// Populate the path to the file
 	struct dirent_file *file = malloc(sizeof(struct dirent_file));
+	if (!file) {
+		perror("malloc");
+		exit(1);
+	}
+
 	file->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+	if (!file->path) {
+		perror("strndup");
+		exit(1);
+	}
 
 	// Populate the dirent_item
 	struct dirent_item *item = malloc(sizeof(struct dirent_item));
+	if (!item) {
+		perror("malloc");
+		exit(1);
+	}
+
 	item->type = DIRENT_FILE;
 	item->data = file;
 
@@ -55,27 +78,37 @@ void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
 void dirent_list_push_link(struct dirent_list *ents, const char *parent_dir, const struct dirent *ent)
 {
 	struct dirent_link *lnk = malloc(sizeof(struct dirent_link));
+	if (!lnk) {
+		perror("malloc");
+		exit(1);
+	}
 
 	// Populate the source location of the link
 	lnk->source = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+	if (!lnk->source) {
+		perror("strndup");
+		exit(1);
+	}
 
 	// Populate the destination of the link via readlink()
 	char *fullpath;
-	{
-		int rv = asprintf(&fullpath, "%s/%s", parent_dir, ent->d_name);
-		if (!rv) {
-			perror("asprintf");
-			exit(1);
-		}
+
+	int as_rv = asprintf(&fullpath, "%s/%s", parent_dir, ent->d_name);
+	if (!as_rv) {
+		perror("asprintf");
+		exit(1);
 	}
 
 	char *destination = calloc(DIRENT_NAME_LENGTH+1, sizeof(char));
-	{
-		ssize_t rv = readlink(fullpath, destination, DIRENT_NAME_LENGTH);
-		if (rv == -1) {
-			perror("readlink");
-			exit(1);
-		}
+	if (!destination) {
+		perror("calloc");
+		exit(1);
+	}
+
+	ssize_t rdlnk_rv = readlink(fullpath, destination, DIRENT_NAME_LENGTH);
+	if (rdlnk_rv == -1) {
+		perror("readlink");
+		exit(1);
 	}
 
 	free(fullpath);
@@ -83,6 +116,11 @@ void dirent_list_push_link(struct dirent_list *ents, const char *parent_dir, con
 
 	// Populate the dirent_item
 	struct dirent_item *item = malloc(sizeof(struct dirent_item));
+	if (!item) {
+		perror("malloc");
+		exit(1);
+	}
+
 	item->type = DIRENT_LINK;
 	item->data = lnk;
 
