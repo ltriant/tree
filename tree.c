@@ -16,7 +16,9 @@ size_t max_depth = 0;
 
 static void print_tree(const char *dir, size_t level);
 
-static void indent(size_t level, const char *prefix, const char *thing)
+static void indent(size_t level,
+		   const char *prefix,
+		   const char *thing)
 {
 	for (; level > 0; level--) {
 		putchar(' ');
@@ -26,7 +28,9 @@ static void indent(size_t level, const char *prefix, const char *thing)
 	printf("%s %s\n", prefix, thing);
 }
 
-static void indent_file(size_t level, const char *prefix, const struct dirent_file *file)
+static void indent_file(size_t level,
+		        const char *prefix,
+		        const struct dirent_file *file)
 {
 	for (; level > 0; level--) {
 		putchar(' ');
@@ -36,7 +40,9 @@ static void indent_file(size_t level, const char *prefix, const struct dirent_fi
 	printf("%s %s\n", prefix, file->path);
 }
 
-static void indent_link(size_t level, const char *prefix, const struct dirent_link *lnk)
+static void indent_link(size_t level,
+		        const char *prefix,
+		        const struct dirent_link *lnk)
 {
 	for (; level > 0; level--) {
 		putchar(' ');
@@ -46,20 +52,24 @@ static void indent_link(size_t level, const char *prefix, const struct dirent_li
 	printf("%s %s -> %s\n", prefix, lnk->source, lnk->destination);
 }
 
-static void indent_item(size_t level, const char *prefix, const struct dirent_item *item)
+static void indent_item(size_t level,
+		        const char *prefix,
+		        const struct dirent_item *item)
 {
 	switch (item->type) {
 
 	case DIRENT_FILE:
 	{
-		struct dirent_file *last_file = (struct dirent_file *)item->data;
+		struct dirent_file *last_file =
+			(struct dirent_file *)item->data;
 		indent_file(level, prefix, last_file);
 		break;
 	}
 
 	case DIRENT_LINK:
 	{
-		struct dirent_link *last_file = (struct dirent_link *)item->data;
+		struct dirent_link *last_file =
+			(struct dirent_link *)item->data;
 		indent_link(level, prefix, last_file);
 		break;
 	}
@@ -75,16 +85,19 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 	dirent_list_init(&files);
 
 	while ((ent = readdir(dh)) != NULL) {
-		if (strchr(ent->d_name, '.') == ent->d_name) {
+		if (strchr(ent->d_name, '.') == ent->d_name)
 			continue;
-		}
 
 		switch (ent->d_type) {
 		case DT_DIR:
 			indent(level + 1, "\u2514\u2500\u2500", ent->d_name);
 
 			char *new_dir;
-			int rv = asprintf(&new_dir, "%s/%s", parent_dir, ent->d_name);
+			int rv = asprintf(&new_dir,
+					  "%s/%s",
+					  parent_dir,
+					  ent->d_name);
+
 			if (!rv) {
 				perror("asprintf");
 				exit(1);
@@ -123,17 +136,19 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 		if (reverse_sort) {
 			size_t last = files.cur - 1;
 
-			for (size_t i = last; i > 0; i -= 1) {
-				indent_item(level + 1, "\u251c\u2500\u2500", items[i]);
-			}
+			for (size_t i = last; i > 0; i -= 1)
+				indent_item(level + 1,
+					    "\u251c\u2500\u2500",
+					    items[i]);
 
 			indent_item(level + 1, "\u2514\u2500\u2500", items[0]);
 		} else {
 			size_t last = files.cur - 1;
 
-			for (size_t i = 0; i < last; i += 1) {
-				indent_item(level + 1, "\u251c\u2500\u2500", items[i]);
-			}
+			for (size_t i = 0; i < last; i += 1)
+				indent_item(level + 1,
+					    "\u251c\u2500\u2500",
+					    items[i]);
 
 			indent_item(level + 1, "\u2514\u2500\u2500", items[last]);
 		}
