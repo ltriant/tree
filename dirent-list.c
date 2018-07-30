@@ -38,8 +38,7 @@ void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
 {
 	// Populate the path to the file
 	struct dirent_file *file = malloc(sizeof(struct dirent_file));
-	file->path = calloc(DIRENT_NAME_LENGTH+1, sizeof(char));
-	strncpy(file->path, ent->d_name, DIRENT_NAME_LENGTH);
+	file->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
 
 	// Populate the dirent_item
 	struct dirent_item *item = malloc(sizeof(struct dirent_item));
@@ -58,8 +57,7 @@ void dirent_list_push_link(struct dirent_list *ents, const char *parent_dir, con
 	struct dirent_link *lnk = malloc(sizeof(struct dirent_link));
 
 	// Populate the source location of the link
-	lnk->source = calloc(DIRENT_NAME_LENGTH+1, sizeof(char));
-	strncpy(lnk->source, ent->d_name, DIRENT_NAME_LENGTH);
+	lnk->source = strndup(ent->d_name, DIRENT_NAME_LENGTH);
 
 	// Populate the destination of the link via readlink()
 	char *fullpath;
