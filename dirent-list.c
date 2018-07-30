@@ -16,7 +16,8 @@ static void extend_list(struct dirent_list *ents)
 	size_t cap = ents->cap;
 	if (ents->cur == cap) {
 		size_t new_cap = cap + 10;
-		ents->entities = realloc(ents->entities, new_cap * sizeof(struct dirent_item *));
+		ents->entities = realloc(ents->entities,
+			new_cap * sizeof(struct dirent_item *));
 		if (!ents->entities) {
 			perror("realloc");
 			exit(1);
@@ -75,7 +76,9 @@ void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
 	extend_list(ents);
 }
 
-void dirent_list_push_link(struct dirent_list *ents, const char *parent_dir, const struct dirent *ent)
+void dirent_list_push_link(struct dirent_list *ents,
+			   const char *parent_dir,
+			   const struct dirent *ent)
 {
 	struct dirent_link *lnk = malloc(sizeof(struct dirent_link));
 	if (!lnk) {

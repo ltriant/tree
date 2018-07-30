@@ -52,7 +52,9 @@ bool dirent_list_is_empty(struct dirent_list *);
 void dirent_list_push_file(struct dirent_list *, const struct dirent *);
 
 // Push a symlink onto the end of the list
-void dirent_list_push_link(struct dirent_list *, const char *, const struct dirent *);
+void dirent_list_push_link(struct dirent_list *,
+			   const char *,
+			   const struct dirent *);
 
 // Destructor
 void dirent_list_destroy(struct dirent_list *);
