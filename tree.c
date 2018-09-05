@@ -13,6 +13,9 @@
 bool directories_only = false;
 bool reverse_sort = false;
 size_t max_depth = 0;
+bool show_summary = false;
+int32_t num_directories = 0;
+int32_t num_files = 0;
 
 static void print_tree(const char *dir, size_t level);
 
@@ -90,6 +93,9 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 
 		switch (ent->d_type) {
 		case DT_DIR:
+			if (show_summary)
+				num_directories += 1;
+
 			indent(level + 1, "\u2514\u2500\u2500", ent->d_name);
 
 			char *new_dir;
@@ -114,6 +120,9 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 		case DT_SOCK:
 			if (directories_only)
 				break;
+
+			if (show_summary)
+				num_files += 1;
 
 			dirent_list_push_file(&files, ent);
 
@@ -174,19 +183,34 @@ static void print_tree(const char *dir, size_t level)
 	closedir(dh);
 }
 
+static void print_summary(void)
+{
+	if (directories_only)
+		printf("\n%d %s\n",
+			num_directories,
+			(num_directories == 1 ? "directory" : "directories"));
+	else
+		printf("\n%d %s, %d %s\n",
+			num_directories,
+			(num_directories == 1 ? "directory" : "directories"),
+			num_files,
+			(num_files == 1 ? "file" : "files"));
+}
+
 static void usage(void)
 {
 	printf("usage: tree [-drh] [-L level] [directory]\n");
 	printf("  -d        Show directories only\n");
 	printf("  -L level  Descend only `level' directories deep\n");
 	printf("  -r        Sort in reverse alphabetic order\n");
+	printf("  -s        Print a summary of directories and files at the end\n");
 	printf("  -h        This help message\n");
 }
 
 int main(int argc, char **argv)
 {
 	int ch;
-	while ((ch = getopt(argc, argv, "dhL:r")) != -1) {
+	while ((ch = getopt(argc, argv, "dhL:rs")) != -1) {
 		switch (ch) {
 		case 'd':
 			directories_only = true;
@@ -198,6 +222,10 @@ int main(int argc, char **argv)
 
 		case 'r':
 			reverse_sort = true;
+			break;
+
+		case 's':
+			show_summary = true;
 			break;
 
 		case 'h':
@@ -226,5 +254,9 @@ int main(int argc, char **argv)
 
 	printf("%s\n", dir);
 	print_tree(dir, 0);
+
+	if (show_summary)
+		print_summary();
+
 	exit(0);
 }
