@@ -31,8 +31,12 @@ struct dirent_link
 
 struct dirent_item
 {
-	void *data;  // either a dirent_file or dirent_link
 	enum dirent_type type;
+	union
+	{
+		struct dirent_file *file;
+		struct dirent_link *link;
+	} data;
 };
 
 struct dirent_list

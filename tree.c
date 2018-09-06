@@ -63,16 +63,14 @@ static void indent_item(size_t level,
 
 	case DIRENT_FILE:
 	{
-		struct dirent_file *last_file =
-			(struct dirent_file *)item->data;
+		struct dirent_file *last_file = item->data.file;
 		indent_file(level, prefix, last_file);
 		break;
 	}
 
 	case DIRENT_LINK:
 	{
-		struct dirent_link *last_file =
-			(struct dirent_link *)item->data;
+		struct dirent_link *last_file = item->data.link;
 		indent_link(level, prefix, last_file);
 		break;
 	}

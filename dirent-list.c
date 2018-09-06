@@ -67,7 +67,7 @@ void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
 	}
 
 	item->type = DIRENT_FILE;
-	item->data = file;
+	item->data.file = file;
 
 	size_t cur = ents->cur;
 	ents->entities[cur] = item;
@@ -125,7 +125,7 @@ void dirent_list_push_link(struct dirent_list *ents,
 	}
 
 	item->type = DIRENT_LINK;
-	item->data = lnk;
+	item->data.link = lnk;
 
 	size_t cur = ents->cur;
 	ents->entities[cur] = item;
@@ -141,17 +141,19 @@ static void destroy_item(struct dirent_item *item)
 
 	case DIRENT_FILE:
 	{
-		struct dirent_file *file = (struct dirent_file *)item->data;
+		struct dirent_file *file = item->data.file;
 
 		if (file->path)
 			free(file->path);
+
+		free(item->data.file);
 
 		break;
 	}
 
 	case DIRENT_LINK:
 	{
-		struct dirent_link *lnk = (struct dirent_link *)item->data;
+		struct dirent_link *lnk = item->data.link;
 
 		if (lnk->source)
 			free(lnk->source);
@@ -159,12 +161,12 @@ static void destroy_item(struct dirent_item *item)
 		if (lnk->destination)
 			free(lnk->destination);
 
+		free(item->data.link);
+
 		break;
 	}
 
 	}
-
-	free(item->data);
 }
 
 void dirent_list_destroy(struct dirent_list *ents)
@@ -184,9 +186,9 @@ static inline char *item_string(struct dirent_item *a)
 
 	switch (a->type) {
 	case DIRENT_FILE:
-		rv = ((struct dirent_file *)(a->data))->path;
+		rv = a->data.file->path;
 	case DIRENT_LINK:
-		rv = ((struct dirent_link *)(a->data))->source;
+		rv = a->data.link->source;
 	}
 
 	return rv;
