@@ -43,6 +43,18 @@ static void indent_file(size_t level,
 	printf("%s %s\n", prefix, file->path);
 }
 
+static void indent_dir(size_t level,
+		        const char *prefix,
+		        const struct dirent_dir *dir)
+{
+	for (; level > 0; level--) {
+		putchar(' ');
+		putchar(' ');
+	}
+
+	printf("%s %s\n", prefix, dir->path);
+}
+
 static void indent_link(size_t level,
 		        const char *prefix,
 		        const struct dirent_link *lnk)
@@ -72,6 +84,13 @@ static void indent_item(size_t level,
 	{
 		struct dirent_link *last_file = item->data.link;
 		indent_link(level, prefix, last_file);
+		break;
+	}
+
+	case DIRENT_DIR:
+	{
+		struct dirent_dir *last_dir = item->data.dir;
+		indent_dir(level, prefix, last_dir);
 		break;
 	}
 

@@ -134,6 +134,38 @@ void dirent_list_push_link(struct dirent_list *ents,
 	extend_list(ents);
 }
 
+void dirent_list_push_dir(struct dirent_list *ents, const struct dirent *ent)
+{
+	// Populate the directory path
+	struct dirent_dir *dir = malloc(sizeof(struct dirent_dir));
+	if (!dir) {
+		perror("malloc");
+		exit(1);
+	}
+
+	dir->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+	if (!dir->path) {
+		perror("strndup");
+		exit(1);
+	}
+
+	// Populate the dirent_item
+	struct dirent_item *item = malloc(sizeof(struct dirent_item));
+	if (!item) {
+		perror("malloc");
+		exit(1);
+	}
+
+	item->type = DIRENT_DIR;
+	item->data.dir = dir;
+
+	size_t cur = ents->cur;
+	ents->entities[cur] = item;
+	ents->cur = cur + 1;
+
+	extend_list(ents);
+}
+
 // Destroys a single dirent_item
 static void destroy_item(struct dirent_item *item)
 {
@@ -166,6 +198,18 @@ static void destroy_item(struct dirent_item *item)
 		break;
 	}
 
+	case DIRENT_DIR:
+	{
+		struct dirent_dir *dir = item->data.dir;
+
+		if (dir->path)
+			free(dir->path);
+
+		free(item->data.dir);
+
+		break;
+	}
+
 	}
 }
 
@@ -189,6 +233,8 @@ static inline char *item_string(struct dirent_item *a)
 		rv = a->data.file->path;
 	case DIRENT_LINK:
 		rv = a->data.link->source;
+	case DIRENT_DIR:
+		rv = a->data.dir->path;
 	}
 
 	return rv;
