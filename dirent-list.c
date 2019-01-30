@@ -244,6 +244,17 @@ static inline int item_compare(struct dirent_item *a, struct dirent_item *b)
 {
 	char *x = item_string(a);
 	char *y = item_string(b);
+
+	// Rank directory items before non-directory items
+	if (a->type == DIRENT_DIR && b->type == DIRENT_DIR)
+		return strncasecmp(x, y, DIRENT_NAME_LENGTH);
+
+	if (a->type == DIRENT_DIR)
+		return -1;
+
+	if (b->type == DIRENT_DIR)
+		return 1;
+
 	return strncasecmp(x, y, DIRENT_NAME_LENGTH);
 }
 
