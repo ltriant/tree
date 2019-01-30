@@ -17,8 +17,6 @@ bool show_summary = false;
 int32_t num_directories = 0;
 int32_t num_files = 0;
 
-static void print_tree(const char *dir, size_t level);
-
 static void indent_file(size_t level,
 		        const char *prefix,
 		        const struct dirent_file *file)
@@ -85,8 +83,19 @@ static void indent_item(size_t level,
 	}
 }
 
-static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
+static void crawl_and_print(const char *dir, size_t level)
 {
+	if ((max_depth > 0) && (level == max_depth))
+		return;
+
+	DIR *dh = opendir(dir);
+
+	if (!dh) {
+		fprintf(stderr, "unable to open %s\n", dir);
+		perror("opendir");
+		exit(1);
+	}
+
 	struct dirent *ent;
 
 	struct dirent_list files;
@@ -124,11 +133,13 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 			if (directories_only)
 				break;
 
-			dirent_list_push_link(&files, parent_dir, ent);
+			dirent_list_push_link(&files, dir, ent);
 
 			break;
 		}
 	}
+
+	closedir(dh);
 
 	if (!dirent_list_is_empty(&files)) {
 		dirent_list_sort(&files);
@@ -154,7 +165,7 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 					char *new_dir;
 					int rv = asprintf(&new_dir,
 							  "%s/%s",
-							  parent_dir,
+							  dir,
 							  items[i]->data.dir->path);
 
 					if (!rv) {
@@ -162,7 +173,7 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 						exit(1);
 					}
 
-					print_tree(new_dir, level + 1);
+					crawl_and_print(new_dir, level + 1);
 					free(new_dir);
 				}
 			} while (i > 0);
@@ -183,7 +194,7 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 					char *new_dir;
 					int rv = asprintf(&new_dir,
 							  "%s/%s",
-							  parent_dir,
+							  dir,
 							  items[i]->data.dir->path);
 
 					if (!rv) {
@@ -191,7 +202,7 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 						exit(1);
 					}
 
-					print_tree(new_dir, level + 1);
+					crawl_and_print(new_dir, level + 1);
 					free(new_dir);
 				}
 			}
@@ -199,23 +210,6 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 	}
 
 	dirent_list_destroy(&files);
-}
-
-static void print_tree(const char *dir, size_t level)
-{
-	if ((max_depth > 0) && (level == max_depth))
-		return;
-
-	DIR *dh = opendir(dir);
-
-	if (!dh) {
-		fprintf(stderr, "unable to open %s\n", dir);
-		perror("opendir");
-		exit(1);
-	}
-
-	crawl_and_print(dh, dir, level);
-	closedir(dh);
 }
 
 static void print_summary(void)
@@ -288,7 +282,7 @@ int main(int argc, char **argv)
 	}
 
 	printf("%s\n", dir);
-	print_tree(dir, 0);
+	crawl_and_print(dir, 0);
 
 	if (show_summary)
 		print_summary();
