@@ -19,18 +19,6 @@ int32_t num_files = 0;
 
 static void print_tree(const char *dir, size_t level);
 
-static void indent(size_t level,
-		   const char *prefix,
-		   const char *thing)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s\n", prefix, thing);
-}
-
 static void indent_file(size_t level,
 		        const char *prefix,
 		        const struct dirent_file *file)
@@ -113,21 +101,8 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 			if (show_summary)
 				num_directories += 1;
 
-			indent(level + 1, "\u2514\u2500\u2500", ent->d_name);
+			dirent_list_push_dir(&files, ent);
 
-			char *new_dir;
-			int rv = asprintf(&new_dir,
-					  "%s/%s",
-					  parent_dir,
-					  ent->d_name);
-
-			if (!rv) {
-				perror("asprintf");
-				exit(1);
-			}
-
-			print_tree(new_dir, level + 1);
-			free(new_dir);
 			break;
 
 		case DT_FIFO:
@@ -162,21 +137,64 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 		if (reverse_sort) {
 			size_t last = files.cur - 1;
 
-			for (size_t i = last; i > 0; i -= 1)
+			size_t i = last + 1;
+			do {
+				i -= 1;
+
+				const char *prefix
+					= i > 0
+					? "\u251c\u2500\u2500"
+					: "\u2514\u2500\u2500";
+
 				indent_item(level + 1,
-					    "\u251c\u2500\u2500",
+					    prefix,
 					    items[i]);
 
-			indent_item(level + 1, "\u2514\u2500\u2500", items[0]);
+				if (items[i]->type == DIRENT_DIR) {
+					char *new_dir;
+					int rv = asprintf(&new_dir,
+							  "%s/%s",
+							  parent_dir,
+							  items[i]->data.dir->path);
+
+					if (!rv) {
+						perror("asprintf");
+						exit(1);
+					}
+
+					print_tree(new_dir, level + 1);
+					free(new_dir);
+				}
+			} while (i > 0);
 		} else {
 			size_t last = files.cur - 1;
 
-			for (size_t i = 0; i < last; i += 1)
+			for (size_t i = 0; i <= last; i += 1) {
+				const char *prefix
+					= i < last
+					? "\u251c\u2500\u2500"
+					: "\u2514\u2500\u2500";
+
 				indent_item(level + 1,
-					    "\u251c\u2500\u2500",
+					    prefix,
 					    items[i]);
 
-			indent_item(level + 1, "\u2514\u2500\u2500", items[last]);
+				if (items[i]->type == DIRENT_DIR) {
+					char *new_dir;
+					int rv = asprintf(&new_dir,
+							  "%s/%s",
+							  parent_dir,
+							  items[i]->data.dir->path);
+
+					if (!rv) {
+						perror("asprintf");
+						exit(1);
+					}
+
+					print_tree(new_dir, level + 1);
+					free(new_dir);
+				}
+			}
 		}
 	}
 
