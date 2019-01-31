@@ -30,8 +30,8 @@ static void indent_file(size_t level,
 }
 
 static void indent_dir(size_t level,
-		        const char *prefix,
-		        const struct dirent_dir *dir)
+		       const char *prefix,
+		       const struct dirent_dir *dir)
 {
 	for (; level > 0; level--) {
 		putchar(' ');
