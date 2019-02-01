@@ -133,6 +133,9 @@ static void crawl_and_print(const char *dir, size_t level)
 			if (directories_only)
 				break;
 
+			if (show_summary)
+				num_files += 1;
+
 			dirent_list_push_link(&files, dir, ent);
 
 			break;
