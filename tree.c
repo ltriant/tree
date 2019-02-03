@@ -10,6 +10,11 @@
 
 #include "dirent-list.h"
 
+#define ITEM_SEP    "\u2502   "
+#define ITEM_BLANK  "    "
+#define ITEM_MIDDLE "\u251c\u2500\u2500"
+#define ITEM_LAST   "\u2514\u2500\u2500"
+
 bool directories_only = false;
 bool reverse_sort = false;
 size_t max_depth = 0;
@@ -17,73 +22,37 @@ bool show_summary = false;
 int32_t num_directories = 0;
 int32_t num_files = 0;
 
-static void indent_file(size_t level,
-		        const char *prefix,
-		        const struct dirent_file *file)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s\n", prefix, file->path);
-}
-
-static void indent_dir(size_t level,
-		       const char *prefix,
-		       const struct dirent_dir *dir)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s\n", prefix, dir->path);
-}
-
-static void indent_link(size_t level,
-		        const char *prefix,
-		        const struct dirent_link *lnk)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s -> %s\n", prefix, lnk->source, lnk->destination);
-}
-
-static void indent_item(size_t level,
-		        const char *prefix,
+static void indent_item(const char *prefix,
+			const char *item_prefix,
 		        const struct dirent_item *item)
 {
 	switch (item->type) {
 
 	case DIRENT_FILE:
 	{
-		struct dirent_file *last_file = item->data.file;
-		indent_file(level, prefix, last_file);
+		struct dirent_file *file = item->data.file;
+		printf("%s%s %s\n", prefix, item_prefix, file->path);
 		break;
 	}
 
 	case DIRENT_LINK:
 	{
-		struct dirent_link *last_file = item->data.link;
-		indent_link(level, prefix, last_file);
+		struct dirent_link *link = item->data.link;
+		printf("%s%s %s -> %s\n", prefix, item_prefix, link->source, link->destination);
 		break;
 	}
 
 	case DIRENT_DIR:
 	{
-		struct dirent_dir *last_dir = item->data.dir;
-		indent_dir(level, prefix, last_dir);
+		struct dirent_dir *dir = item->data.dir;
+		printf("%s%s %s\n", prefix, item_prefix, dir->path);
 		break;
 	}
 
 	}
 }
 
-static void crawl_and_print(const char *dir, size_t level)
+static void crawl_and_print(const char *dir, size_t level, char *indent)
 {
 	if ((max_depth > 0) && (level == max_depth))
 		return;
@@ -155,14 +124,12 @@ static void crawl_and_print(const char *dir, size_t level)
 			do {
 				i -= 1;
 
-				const char *prefix
+				const char *item_prefix
 					= i > 0
-					? "\u251c\u2500\u2500"
-					: "\u2514\u2500\u2500";
+					? ITEM_MIDDLE
+					: ITEM_LAST;
 
-				indent_item(level + 1,
-					    prefix,
-					    items[i]);
+				indent_item(indent, item_prefix, items[i]);
 
 				if (items[i]->type == DIRENT_DIR) {
 					char *new_dir;
@@ -176,7 +143,18 @@ static void crawl_and_print(const char *dir, size_t level)
 						exit(1);
 					}
 
-					crawl_and_print(new_dir, level + 1);
+					char *next_indent;
+					rv = asprintf(&next_indent,
+						      "%s%s",
+						      indent,
+						      i > 0 ? ITEM_SEP : ITEM_BLANK);
+
+					if (!rv) {
+						perror("asprintf");
+						exit(1);
+					}
+
+					crawl_and_print(new_dir, level + 1, next_indent);
 					free(new_dir);
 				}
 			} while (i > 0);
@@ -184,14 +162,12 @@ static void crawl_and_print(const char *dir, size_t level)
 			size_t last = files.cur - 1;
 
 			for (size_t i = 0; i <= last; i += 1) {
-				const char *prefix
+				const char *item_prefix
 					= i < last
-					? "\u251c\u2500\u2500"
-					: "\u2514\u2500\u2500";
+					? ITEM_MIDDLE
+					: ITEM_LAST;
 
-				indent_item(level + 1,
-					    prefix,
-					    items[i]);
+				indent_item(indent, item_prefix, items[i]);
 
 				if (items[i]->type == DIRENT_DIR) {
 					char *new_dir;
@@ -205,8 +181,20 @@ static void crawl_and_print(const char *dir, size_t level)
 						exit(1);
 					}
 
-					crawl_and_print(new_dir, level + 1);
+					char *next_indent;
+					rv = asprintf(&next_indent,
+						      "%s%s",
+						      indent,
+						      i < last ? ITEM_SEP : ITEM_BLANK);
+
+					if (!rv) {
+						perror("asprintf");
+						exit(1);
+					}
+
+					crawl_and_print(new_dir, level + 1, next_indent);
 					free(new_dir);
+					free(next_indent);
 				}
 			}
 		}
@@ -285,7 +273,7 @@ int main(int argc, char **argv)
 	}
 
 	printf("%s\n", dir);
-	crawl_and_print(dir, 0);
+	crawl_and_print(dir, 0, "");
 
 	if (show_summary)
 		print_summary();
