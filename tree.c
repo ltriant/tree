@@ -10,6 +10,11 @@
 
 #include "dirent-list.h"
 
+#define ITEM_SEP    "\u2502   "
+#define ITEM_BLANK  "    "
+#define ITEM_MIDDLE "\u251c\u2500\u2500"
+#define ITEM_LAST   "\u2514\u2500\u2500"
+
 bool directories_only = false;
 bool reverse_sort = false;
 size_t max_depth = 0;
@@ -17,69 +22,49 @@ bool show_summary = false;
 int32_t num_directories = 0;
 int32_t num_files = 0;
 
-static void print_tree(const char *dir, size_t level);
-
-static void indent(size_t level,
-		   const char *prefix,
-		   const char *thing)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s\n", prefix, thing);
-}
-
-static void indent_file(size_t level,
-		        const char *prefix,
-		        const struct dirent_file *file)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s\n", prefix, file->path);
-}
-
-static void indent_link(size_t level,
-		        const char *prefix,
-		        const struct dirent_link *lnk)
-{
-	for (; level > 0; level--) {
-		putchar(' ');
-		putchar(' ');
-	}
-
-	printf("%s %s -> %s\n", prefix, lnk->source, lnk->destination);
-}
-
-static void indent_item(size_t level,
-		        const char *prefix,
+static void indent_item(const char *prefix,
+			const char *item_prefix,
 		        const struct dirent_item *item)
 {
 	switch (item->type) {
 
 	case DIRENT_FILE:
 	{
-		struct dirent_file *last_file = item->data.file;
-		indent_file(level, prefix, last_file);
+		struct dirent_file *file = item->data.file;
+		printf("%s%s %s\n", prefix, item_prefix, file->path);
 		break;
 	}
 
 	case DIRENT_LINK:
 	{
-		struct dirent_link *last_file = item->data.link;
-		indent_link(level, prefix, last_file);
+		struct dirent_link *link = item->data.link;
+		printf("%s%s %s -> %s\n", prefix, item_prefix, link->source, link->destination);
+		break;
+	}
+
+	case DIRENT_DIR:
+	{
+		struct dirent_dir *dir = item->data.dir;
+		printf("%s%s %s\n", prefix, item_prefix, dir->path);
 		break;
 	}
 
 	}
 }
 
-static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
+static void crawl_and_print(const char *dir, size_t level, char *indent)
 {
+	if ((max_depth > 0) && (level == max_depth))
+		return;
+
+	DIR *dh = opendir(dir);
+
+	if (!dh) {
+		fprintf(stderr, "unable to open %s\n", dir);
+		perror("opendir");
+		exit(1);
+	}
+
 	struct dirent *ent;
 
 	struct dirent_list files;
@@ -94,21 +79,8 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 			if (show_summary)
 				num_directories += 1;
 
-			indent(level + 1, "\u2514\u2500\u2500", ent->d_name);
+			dirent_list_push_dir(&files, ent);
 
-			char *new_dir;
-			int rv = asprintf(&new_dir,
-					  "%s/%s",
-					  parent_dir,
-					  ent->d_name);
-
-			if (!rv) {
-				perror("asprintf");
-				exit(1);
-			}
-
-			print_tree(new_dir, level + 1);
-			free(new_dir);
 			break;
 
 		case DT_FIFO:
@@ -130,55 +102,67 @@ static void crawl_and_print(DIR *dh, const char *parent_dir, size_t level)
 			if (directories_only)
 				break;
 
-			dirent_list_push_link(&files, parent_dir, ent);
+			if (show_summary)
+				num_files += 1;
+
+			dirent_list_push_link(&files, dir, ent);
 
 			break;
 		}
 	}
+
+	closedir(dh);
 
 	if (!dirent_list_is_empty(&files)) {
 		dirent_list_sort(&files);
 		struct dirent_item **items = files.entities;
 
 		if (reverse_sort) {
-			size_t last = files.cur - 1;
+			dirent_list_reverse(&files);
+		}
 
-			for (size_t i = last; i > 0; i -= 1)
-				indent_item(level + 1,
-					    "\u251c\u2500\u2500",
-					    items[i]);
+		size_t last = files.cur - 1;
 
-			indent_item(level + 1, "\u2514\u2500\u2500", items[0]);
-		} else {
-			size_t last = files.cur - 1;
+		for (size_t i = 0; i <= last; i += 1) {
+			const char *item_prefix
+				= i < last
+				? ITEM_MIDDLE
+				: ITEM_LAST;
 
-			for (size_t i = 0; i < last; i += 1)
-				indent_item(level + 1,
-					    "\u251c\u2500\u2500",
-					    items[i]);
+			indent_item(indent, item_prefix, items[i]);
 
-			indent_item(level + 1, "\u2514\u2500\u2500", items[last]);
+			if (items[i]->type == DIRENT_DIR) {
+				char *new_dir;
+				int rv = asprintf(&new_dir,
+						  "%s/%s",
+						  dir,
+						  items[i]->data.dir->path);
+
+				if (!rv) {
+					perror("asprintf");
+					exit(1);
+				}
+
+				char *next_indent;
+				rv = asprintf(&next_indent,
+					      "%s%s",
+					      indent,
+					      i < last ? ITEM_SEP : ITEM_BLANK);
+
+				if (!rv) {
+					perror("asprintf");
+					exit(1);
+				}
+
+				crawl_and_print(new_dir, level + 1, next_indent);
+
+				free(new_dir);
+				free(next_indent);
+			}
 		}
 	}
 
 	dirent_list_destroy(&files);
-}
-
-static void print_tree(const char *dir, size_t level)
-{
-	if ((max_depth > 0) && (level == max_depth))
-		return;
-
-	DIR *dh = opendir(dir);
-
-	if (!dh) {
-		fprintf(stderr, "unable to open %s\n", dir);
-		perror("opendir");
-		exit(1);
-	}
-
-	crawl_and_print(dh, dir, level);
-	closedir(dh);
 }
 
 static void print_summary(void)
@@ -251,7 +235,7 @@ int main(int argc, char **argv)
 	}
 
 	printf("%s\n", dir);
-	print_tree(dir, 0);
+	crawl_and_print(dir, 0, "");
 
 	if (show_summary)
 		print_summary();

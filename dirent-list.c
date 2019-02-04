@@ -134,6 +134,38 @@ void dirent_list_push_link(struct dirent_list *ents,
 	extend_list(ents);
 }
 
+void dirent_list_push_dir(struct dirent_list *ents, const struct dirent *ent)
+{
+	// Populate the directory path
+	struct dirent_dir *dir = malloc(sizeof(struct dirent_dir));
+	if (!dir) {
+		perror("malloc");
+		exit(1);
+	}
+
+	dir->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+	if (!dir->path) {
+		perror("strndup");
+		exit(1);
+	}
+
+	// Populate the dirent_item
+	struct dirent_item *item = malloc(sizeof(struct dirent_item));
+	if (!item) {
+		perror("malloc");
+		exit(1);
+	}
+
+	item->type = DIRENT_DIR;
+	item->data.dir = dir;
+
+	size_t cur = ents->cur;
+	ents->entities[cur] = item;
+	ents->cur = cur + 1;
+
+	extend_list(ents);
+}
+
 // Destroys a single dirent_item
 static void destroy_item(struct dirent_item *item)
 {
@@ -166,6 +198,18 @@ static void destroy_item(struct dirent_item *item)
 		break;
 	}
 
+	case DIRENT_DIR:
+	{
+		struct dirent_dir *dir = item->data.dir;
+
+		if (dir->path)
+			free(dir->path);
+
+		free(item->data.dir);
+
+		break;
+	}
+
 	}
 }
 
@@ -189,6 +233,8 @@ static inline char *item_string(struct dirent_item *a)
 		rv = a->data.file->path;
 	case DIRENT_LINK:
 		rv = a->data.link->source;
+	case DIRENT_DIR:
+		rv = a->data.dir->path;
 	}
 
 	return rv;
@@ -198,6 +244,17 @@ static inline int item_compare(struct dirent_item *a, struct dirent_item *b)
 {
 	char *x = item_string(a);
 	char *y = item_string(b);
+
+	// Rank directory items before non-directory items
+	if (a->type == DIRENT_DIR && b->type == DIRENT_DIR)
+		return strncasecmp(x, y, DIRENT_NAME_LENGTH);
+
+	if (a->type == DIRENT_DIR)
+		return -1;
+
+	if (b->type == DIRENT_DIR)
+		return 1;
+
 	return strncasecmp(x, y, DIRENT_NAME_LENGTH);
 }
 
@@ -218,5 +275,14 @@ void dirent_list_sort(struct dirent_list *ents)
 
 		ents->entities[j+1] = item;
 		i += 1;
+	}
+}
+
+void dirent_list_reverse(struct dirent_list *ents)
+{
+	for (size_t i = 0; i < (ents->cur - 1) / 2; i += 1) {
+		struct dirent_item *tmp = ents->entities[i];
+		ents->entities[i] = ents->entities[ents->cur - 1 - i];
+		ents->entities[ents->cur - 1 - i] = tmp;
 	}
 }

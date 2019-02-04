@@ -15,7 +15,8 @@
 enum dirent_type
 {
 	DIRENT_FILE,
-	DIRENT_LINK
+	DIRENT_LINK,
+	DIRENT_DIR
 };
 
 struct dirent_file
@@ -29,6 +30,11 @@ struct dirent_link
 	char *destination;
 };
 
+struct dirent_dir
+{
+	char *path;
+};
+
 struct dirent_item
 {
 	enum dirent_type type;
@@ -36,6 +42,7 @@ struct dirent_item
 	{
 		struct dirent_file *file;
 		struct dirent_link *link;
+		struct dirent_dir  *dir;
 	} data;
 };
 
@@ -60,10 +67,16 @@ void dirent_list_push_link(struct dirent_list *,
 			   const char *,
 			   const struct dirent *);
 
+// Push a directory onto the end of the list
+void dirent_list_push_dir(struct dirent_list *, const struct dirent *);
+
 // Destructor
 void dirent_list_destroy(struct dirent_list *);
 
 // Sort a list of entities in ascending, case-insensitive order
 void dirent_list_sort(struct dirent_list *);
+
+// Reverse a list of entities
+void dirent_list_reverse(struct dirent_list *);
 
 #endif
