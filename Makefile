@@ -1,4 +1,3 @@
-CC=gcc
 CFLAGS+=-std=c99 -Wall -Wextra -Werror -Wformat -Wpointer-arith -pedantic-errors -Os
 
 INSTALL_PROGRAM=/usr/bin/install
