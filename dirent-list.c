@@ -231,10 +231,15 @@ static inline char *item_string(struct dirent_item *a)
 	switch (a->type) {
 	case DIRENT_FILE:
 		rv = a->data.file->path;
+		break;
 	case DIRENT_LINK:
 		rv = a->data.link->source;
+		break;
 	case DIRENT_DIR:
 		rv = a->data.dir->path;
+		break;
+	default:
+		rv = NULL;
 	}
 
 	return rv;
