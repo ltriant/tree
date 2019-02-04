@@ -277,3 +277,12 @@ void dirent_list_sort(struct dirent_list *ents)
 		i += 1;
 	}
 }
+
+void dirent_list_reverse(struct dirent_list *ents)
+{
+	for (size_t i = 0; i < (ents->cur - 1) / 2; i += 1) {
+		struct dirent_item *tmp = ents->entities[i];
+		ents->entities[i] = ents->entities[ents->cur - 1 - i];
+		ents->entities[ents->cur - 1 - i] = tmp;
+	}
+}
