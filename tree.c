@@ -118,84 +118,46 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 		struct dirent_item **items = files.entities;
 
 		if (reverse_sort) {
-			size_t last = files.cur - 1;
+			dirent_list_reverse(&files);
+		}
 
-			size_t i = last + 1;
-			do {
-				i -= 1;
+		size_t last = files.cur - 1;
 
-				const char *item_prefix
-					= i > 0
-					? ITEM_MIDDLE
-					: ITEM_LAST;
+		for (size_t i = 0; i <= last; i += 1) {
+			const char *item_prefix
+				= i < last
+				? ITEM_MIDDLE
+				: ITEM_LAST;
 
-				indent_item(indent, item_prefix, items[i]);
+			indent_item(indent, item_prefix, items[i]);
 
-				if (items[i]->type == DIRENT_DIR) {
-					char *new_dir;
-					int rv = asprintf(&new_dir,
-							  "%s/%s",
-							  dir,
-							  items[i]->data.dir->path);
+			if (items[i]->type == DIRENT_DIR) {
+				char *new_dir;
+				int rv = asprintf(&new_dir,
+						  "%s/%s",
+						  dir,
+						  items[i]->data.dir->path);
 
-					if (!rv) {
-						perror("asprintf");
-						exit(1);
-					}
-
-					char *next_indent;
-					rv = asprintf(&next_indent,
-						      "%s%s",
-						      indent,
-						      i > 0 ? ITEM_SEP : ITEM_BLANK);
-
-					if (!rv) {
-						perror("asprintf");
-						exit(1);
-					}
-
-					crawl_and_print(new_dir, level + 1, next_indent);
-					free(new_dir);
+				if (!rv) {
+					perror("asprintf");
+					exit(1);
 				}
-			} while (i > 0);
-		} else {
-			size_t last = files.cur - 1;
 
-			for (size_t i = 0; i <= last; i += 1) {
-				const char *item_prefix
-					= i < last
-					? ITEM_MIDDLE
-					: ITEM_LAST;
+				char *next_indent;
+				rv = asprintf(&next_indent,
+					      "%s%s",
+					      indent,
+					      i < last ? ITEM_SEP : ITEM_BLANK);
 
-				indent_item(indent, item_prefix, items[i]);
-
-				if (items[i]->type == DIRENT_DIR) {
-					char *new_dir;
-					int rv = asprintf(&new_dir,
-							  "%s/%s",
-							  dir,
-							  items[i]->data.dir->path);
-
-					if (!rv) {
-						perror("asprintf");
-						exit(1);
-					}
-
-					char *next_indent;
-					rv = asprintf(&next_indent,
-						      "%s%s",
-						      indent,
-						      i < last ? ITEM_SEP : ITEM_BLANK);
-
-					if (!rv) {
-						perror("asprintf");
-						exit(1);
-					}
-
-					crawl_and_print(new_dir, level + 1, next_indent);
-					free(new_dir);
-					free(next_indent);
+				if (!rv) {
+					perror("asprintf");
+					exit(1);
 				}
+
+				crawl_and_print(new_dir, level + 1, next_indent);
+
+				free(new_dir);
+				free(next_indent);
 			}
 		}
 	}
