@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "dirent-list.h"
+#include "out.h"
 
 #define ITEM_SEP    "\u2502   "
 #define ITEM_BLANK  "    "
@@ -22,36 +23,6 @@ bool show_summary = false;
 int32_t num_directories = 0;
 int32_t num_files = 0;
 
-static void indent_item(const char *prefix,
-			const char *item_prefix,
-		        const struct dirent_item *item)
-{
-	switch (item->type) {
-
-	case DIRENT_FILE:
-	{
-		struct dirent_file *file = item->data.file;
-		printf("%s%s %s\n", prefix, item_prefix, file->path);
-		break;
-	}
-
-	case DIRENT_LINK:
-	{
-		struct dirent_link *link = item->data.link;
-		printf("%s%s %s -> %s\n", prefix, item_prefix, link->source, link->destination);
-		break;
-	}
-
-	case DIRENT_DIR:
-	{
-		struct dirent_dir *dir = item->data.dir;
-		printf("%s%s %s\n", prefix, item_prefix, dir->path);
-		break;
-	}
-
-	}
-}
-
 static void crawl_and_print(const char *dir, size_t level, char *indent)
 {
 	if ((max_depth > 0) && (level == max_depth))
@@ -61,6 +32,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 
 	if (!dh) {
 		fprintf(stderr, "unable to open %s\n", dir);
+		// TODO ENOACCES ?
 		perror("opendir");
 		exit(1);
 	}
@@ -94,7 +66,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 			if (show_summary)
 				num_files += 1;
 
-			dirent_list_push_file(&files, ent);
+			dirent_list_push_file(&files, dir, ent);
 
 			break;
 

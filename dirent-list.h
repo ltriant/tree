@@ -1,7 +1,9 @@
 #ifndef DIRENT_LIST_H
 #define DIRENT_LIST_H
 
+#include <dirent.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 #if defined(_DARWIN_FEATURE_64_BIT_INODE)
 #define DIRENT_NAME_LENGTH 1023
@@ -22,6 +24,7 @@ enum dirent_type
 struct dirent_file
 {
 	char *path;
+	mode_t mode;
 };
 
 struct dirent_link
@@ -60,7 +63,9 @@ void dirent_list_init(struct dirent_list *);
 bool dirent_list_is_empty(struct dirent_list *);
 
 // Push a plain file onto the end of the list
-void dirent_list_push_file(struct dirent_list *, const struct dirent *);
+void dirent_list_push_file(struct dirent_list *,
+			   const char *,
+			   const struct dirent *);
 
 // Push a symlink onto the end of the list
 void dirent_list_push_link(struct dirent_list *,
