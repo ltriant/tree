@@ -44,7 +44,9 @@ bool dirent_list_is_empty(struct dirent_list *ents)
 	return ents->cur == 0;
 }
 
-void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
+void dirent_list_push_file(struct dirent_list *ents,
+			   const char *parent_dir,
+			   const struct dirent *ent)
 {
 	// Populate the path to the file
 	struct dirent_file *file = malloc(sizeof(struct dirent_file));
@@ -58,6 +60,24 @@ void dirent_list_push_file(struct dirent_list *ents, const struct dirent *ent)
 		perror("strndup");
 		exit(1);
 	}
+
+	// Get some information about the file
+	char *fullpath;
+
+	int as_rv = asprintf(&fullpath, "%s/%s", parent_dir, ent->d_name);
+	if (!as_rv) {
+		perror("asprintf");
+		exit(1);
+	}
+
+	struct stat file_stats;
+	int stat_rv = stat(fullpath, &file_stats);
+	if (stat_rv != 0) {
+		perror("stat");
+		exit(1);
+	}
+
+	file->mode = file_stats.st_mode;
 
 	// Populate the dirent_item
 	struct dirent_item *item = malloc(sizeof(struct dirent_item));

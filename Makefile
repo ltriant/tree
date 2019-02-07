@@ -3,7 +3,7 @@ CFLAGS+=-std=c99 -Wall -Wextra -Werror -Wformat -Wpointer-arith -pedantic-errors
 INSTALL_PROGRAM=/usr/bin/install
 PREFIX=/usr/local
 
-OBJ=tree.o dirent-list.o
+OBJ=tree.o dirent-list.o out.o
 
 tree: $(OBJ)
 
