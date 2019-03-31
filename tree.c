@@ -7,9 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/errno.h>
 
 #include "dirent-list.h"
 #include "out.h"
+
+extern int errno;
 
 #define ITEM_SEP    "\u2502   "
 #define ITEM_BLANK  "    "
@@ -31,8 +34,10 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 	DIR *dh = opendir(dir);
 
 	if (!dh) {
+		if (errno == EACCES)
+			return;
+
 		fprintf(stderr, "unable to open %s\n", dir);
-		// TODO ENOACCES ?
 		perror("opendir");
 		exit(1);
 	}
