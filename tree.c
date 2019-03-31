@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <sys/errno.h>
 
-#include "dirent-list.h"
+#include "list.h"
 #include "out.h"
 
 extern int errno;
@@ -45,7 +45,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 	struct dirent *ent;
 
 	struct dirent_list files;
-	dirent_list_init(&files);
+	list_init(&files);
 
 	while ((ent = readdir(dh)) != NULL) {
 		if (strchr(ent->d_name, '.') == ent->d_name)
@@ -56,7 +56,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 			if (show_summary)
 				num_directories += 1;
 
-			dirent_list_push_dir(&files, ent);
+			list_push_dir(&files, ent);
 
 			break;
 
@@ -71,7 +71,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 			if (show_summary)
 				num_files += 1;
 
-			dirent_list_push_file(&files, dir, ent);
+			list_push_file(&files, dir, ent);
 
 			break;
 
@@ -82,7 +82,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 			if (show_summary)
 				num_files += 1;
 
-			dirent_list_push_link(&files, dir, ent);
+			list_push_link(&files, dir, ent);
 
 			break;
 		}
@@ -90,12 +90,12 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 
 	closedir(dh);
 
-	if (!dirent_list_is_empty(&files)) {
-		dirent_list_sort(&files);
+	if (!list_is_empty(&files)) {
+		list_sort(&files);
 		struct dirent_item **items = files.entities;
 
 		if (reverse_sort) {
-			dirent_list_reverse(&files);
+			list_reverse(&files);
 		}
 
 		size_t last = files.cur - 1;
@@ -139,7 +139,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 		}
 	}
 
-	dirent_list_destroy(&files);
+	list_destroy(&files);
 }
 
 static void print_summary(void)

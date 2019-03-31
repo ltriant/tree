@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "dirent-list.h"
+#include "list.h"
 
 // Increases the size of the list if it's currently full
 static void extend_list(struct dirent_list *ents)
@@ -27,7 +27,7 @@ static void extend_list(struct dirent_list *ents)
 	}
 }
 
-void dirent_list_init(struct dirent_list *ents)
+void list_init(struct dirent_list *ents)
 {
 	size_t cap = 64;
 	ents->cap = cap;
@@ -39,14 +39,14 @@ void dirent_list_init(struct dirent_list *ents)
 	}
 }
 
-bool dirent_list_is_empty(struct dirent_list *ents)
+bool list_is_empty(struct dirent_list *ents)
 {
 	return ents->cur == 0;
 }
 
-void dirent_list_push_file(struct dirent_list *ents,
-			   const char *parent_dir,
-			   const struct dirent *ent)
+void list_push_file(struct dirent_list *ents,
+		    const char *parent_dir,
+		    const struct dirent *ent)
 {
 	// Populate the path to the file
 	struct dirent_file *file = malloc(sizeof(struct dirent_file));
@@ -96,9 +96,9 @@ void dirent_list_push_file(struct dirent_list *ents,
 	extend_list(ents);
 }
 
-void dirent_list_push_link(struct dirent_list *ents,
-			   const char *parent_dir,
-			   const struct dirent *ent)
+void list_push_link(struct dirent_list *ents,
+		    const char *parent_dir,
+		    const struct dirent *ent)
 {
 	struct dirent_link *lnk = malloc(sizeof(struct dirent_link));
 	if (!lnk) {
@@ -154,7 +154,7 @@ void dirent_list_push_link(struct dirent_list *ents,
 	extend_list(ents);
 }
 
-void dirent_list_push_dir(struct dirent_list *ents, const struct dirent *ent)
+void list_push_dir(struct dirent_list *ents, const struct dirent *ent)
 {
 	// Populate the directory path
 	struct dirent_dir *dir = malloc(sizeof(struct dirent_dir));
@@ -233,7 +233,7 @@ static void destroy_item(struct dirent_item *item)
 	}
 }
 
-void dirent_list_destroy(struct dirent_list *ents)
+void list_destroy(struct dirent_list *ents)
 {
 	for (size_t i = 0; i < ents->cur; i += 1) {
 		struct dirent_item *item = ents->entities[i];
@@ -283,7 +283,7 @@ static inline int item_compare(struct dirent_item *a, struct dirent_item *b)
 	return strncasecmp(x, y, DIRENT_NAME_LENGTH);
 }
 
-void dirent_list_sort(struct dirent_list *ents)
+void list_sort(struct dirent_list *ents)
 {
 	// Insertion sort, with a modification to remove a temporary variable
 	// assignment in the inner loop.
@@ -303,7 +303,7 @@ void dirent_list_sort(struct dirent_list *ents)
 	}
 }
 
-void dirent_list_reverse(struct dirent_list *ents)
+void list_reverse(struct dirent_list *ents)
 {
 	for (size_t i = 0; i < (ents->cur - 1) / 2; i += 1) {
 		struct dirent_item *tmp = ents->entities[i];

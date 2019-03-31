@@ -1,5 +1,5 @@
-#ifndef DIRENT_LIST_H
-#define DIRENT_LIST_H
+#ifndef LIST_H
+#define LIST_H
 
 #include <dirent.h>
 #include <stdbool.h>
@@ -57,31 +57,31 @@ struct dirent_list
 };
 
 // Constructor
-void dirent_list_init(struct dirent_list *);
+void list_init(struct dirent_list *);
 
 // Determine if the list is empty
-bool dirent_list_is_empty(struct dirent_list *);
+bool list_is_empty(struct dirent_list *);
 
 // Push a plain file onto the end of the list
-void dirent_list_push_file(struct dirent_list *,
-			   const char *,
-			   const struct dirent *);
+void list_push_file(struct dirent_list *,
+		    const char *,
+		    const struct dirent *);
 
 // Push a symlink onto the end of the list
-void dirent_list_push_link(struct dirent_list *,
-			   const char *,
-			   const struct dirent *);
+void list_push_link(struct dirent_list *,
+		    const char *,
+		    const struct dirent *);
 
 // Push a directory onto the end of the list
-void dirent_list_push_dir(struct dirent_list *, const struct dirent *);
+void list_push_dir(struct dirent_list *, const struct dirent *);
 
 // Destructor
-void dirent_list_destroy(struct dirent_list *);
+void list_destroy(struct dirent_list *);
 
 // Sort a list of entities in ascending, case-insensitive order
-void dirent_list_sort(struct dirent_list *);
+void list_sort(struct dirent_list *);
 
 // Reverse a list of entities
-void dirent_list_reverse(struct dirent_list *);
+void list_reverse(struct dirent_list *);
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef OUT_H
 #define OUT_H
 
-#include "dirent-list.h"
+#include "list.h"
 
 #define ANSI_COLOR_RED   "\x1b[31m"
 #define ANSI_COLOR_GREEN "\x1b[32m"
