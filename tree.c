@@ -34,7 +34,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 	DIR *dh = opendir(dir);
 
 	if (!dh) {
-		if (errno == EACCES)
+		if (errno == EACCES || errno == EPERM)
 			return;
 
 		fprintf(stderr, "unable to open %s\n", dir);
