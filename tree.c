@@ -158,7 +158,7 @@ static void print_summary(void)
 
 static void usage(void)
 {
-	printf("usage: tree [-drh] [-L level] [directory]\n");
+	printf("usage: tree [-drsh] [-L level] [directory]\n");
 	printf("  -d        Show directories only\n");
 	printf("  -L level  Descend only `level' directories deep\n");
 	printf("  -r        Sort in reverse alphabetic order\n");
