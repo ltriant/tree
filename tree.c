@@ -208,8 +208,7 @@ int main(int argc, char **argv)
 	argc -= optind;
 	argv += optind;
 
-	char dir[DIRENT_NAME_LENGTH+1];
-	memset(dir, 0, DIRENT_NAME_LENGTH+1);
+	char dir[DIRENT_NAME_LENGTH+1] = { 0 };
 
 	if (argc > 0) {
 		strncpy(dir, argv[0], DIRENT_NAME_LENGTH);
