@@ -176,8 +176,19 @@ int main(int argc, char **argv)
 			break;
 
 		case 'L':
-			max_depth = atoi(optarg);
+		{
+			int user_depth = atoi(optarg);
+
+			if (user_depth < 0) {
+				fprintf(stderr,
+					"invalid depth (%i), must be greater than zero\n",
+					user_depth);
+				exit(1);
+			}
+
+			max_depth = user_depth;
 			break;
+		}
 
 		case 'r':
 			reverse_sort = true;
