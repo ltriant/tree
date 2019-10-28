@@ -92,8 +92,7 @@ void indent_item(const char *prefix,
 {
 	if (isatty(fileno(stdout))) {
 		indent_item_color(prefix, item_prefix, item);
-	}
-	else {
+	} else {
 		indent_item_nocolor(prefix, item_prefix, item);
 	}
 }

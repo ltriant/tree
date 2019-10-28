@@ -1,13 +1,14 @@
 #define _GNU_SOURCE
 
 #include <dirent.h>
+#include <errno.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/errno.h>
 
 #include "list.h"
 #include "out.h"
@@ -19,6 +20,7 @@ extern int errno;
 #define ITEM_MIDDLE "\u251c\u2500\u2500"
 #define ITEM_LAST   "\u2514\u2500\u2500"
 
+bool show_full_path = false;
 bool directories_only = false;
 bool reverse_sort = false;
 size_t max_depth = 0;
@@ -45,7 +47,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 	struct dirent *ent;
 
 	struct dirent_list files;
-	list_init(&files);
+	list_init(&files, show_full_path);
 
 	while ((ent = readdir(dh)) != NULL) {
 		if (strchr(ent->d_name, '.') == ent->d_name)
@@ -56,7 +58,7 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 			if (show_summary)
 				num_directories += 1;
 
-			list_push_dir(&files, ent);
+			list_push_dir(&files, dir, ent);
 
 			break;
 
@@ -110,21 +112,27 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 
 			if (items[i]->type == DIRENT_DIR) {
 				char *new_dir;
-				int rv = asprintf(&new_dir,
-						  "%s/%s",
-						  dir,
-						  items[i]->data.dir->path);
 
-				if (!rv) {
-					perror("asprintf");
-					exit(1);
+				if (show_full_path) {
+					new_dir = strndup(items[i]->data.dir->path,
+							  items[i]->data.dir->len);
+				} else {
+					int rv = asprintf(&new_dir,
+							  "%s/%s",
+							  dir,
+							  items[i]->data.dir->path);
+
+					if (!rv) {
+						perror("asprintf");
+						exit(1);
+					}
 				}
 
 				char *next_indent;
-				rv = asprintf(&next_indent,
-					      "%s%s",
-					      indent,
-					      i < last ? ITEM_SEP : ITEM_BLANK);
+				int rv = asprintf(&next_indent,
+						  "%s%s",
+						  indent,
+						  i < last ? ITEM_SEP : ITEM_BLANK);
 
 				if (!rv) {
 					perror("asprintf");
@@ -144,16 +152,17 @@ static void crawl_and_print(const char *dir, size_t level, char *indent)
 
 static void print_summary(void)
 {
-	if (directories_only)
+	if (directories_only) {
 		printf("\n%d %s\n",
 			num_directories,
 			(num_directories == 1 ? "directory" : "directories"));
-	else
+	} else {
 		printf("\n%d %s, %d %s\n",
 			num_directories,
 			(num_directories == 1 ? "directory" : "directories"),
 			num_files,
 			(num_files == 1 ? "file" : "files"));
+	}
 }
 
 static void usage(void)
@@ -163,13 +172,14 @@ static void usage(void)
 	printf("  -L level  Descend only `level' directories deep\n");
 	printf("  -r        Sort in reverse alphabetic order\n");
 	printf("  -s        Print a summary of directories and files at the end\n");
+	printf("  -f        Print the full path of each file\n");
 	printf("  -h        This help message\n");
 }
 
 int main(int argc, char **argv)
 {
 	int ch;
-	while ((ch = getopt(argc, argv, "dhL:rs")) != -1) {
+	while ((ch = getopt(argc, argv, "dhL:rsf")) != -1) {
 		switch (ch) {
 		case 'd':
 			directories_only = true;
@@ -196,6 +206,10 @@ int main(int argc, char **argv)
 
 		case 's':
 			show_summary = true;
+			break;
+
+		case 'f':
+			show_full_path = true;
 			break;
 
 		case 'h':

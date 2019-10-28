@@ -27,11 +27,12 @@ static void extend_list(struct dirent_list *ents)
 	}
 }
 
-void list_init(struct dirent_list *ents)
+void list_init(struct dirent_list *ents, bool show_full_path)
 {
 	size_t cap = 64;
 	ents->cap = cap;
 	ents->cur = 0;
+	ents->full_path = show_full_path;
 	ents->entities = calloc(cap, sizeof(struct dirent_item *));
 	if (!ents->entities) {
 		perror("calloc");
@@ -55,12 +56,6 @@ void list_push_file(struct dirent_list *ents,
 		exit(1);
 	}
 
-	file->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
-	if (!file->path) {
-		perror("strndup");
-		exit(1);
-	}
-
 	// Get some information about the file
 	char *fullpath;
 
@@ -78,6 +73,20 @@ void list_push_file(struct dirent_list *ents,
 	}
 
 	file->mode = file_stats.st_mode;
+
+	if (ents->full_path) {
+		file->path = fullpath;
+		file->len  = (size_t) as_rv;
+	} else {
+		file->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+
+		if (!file->path) {
+			perror("strndup");
+			exit(1);
+		}
+
+		file->len  = DIRENT_NAME_LENGTH;
+	}
 
 	// Populate the dirent_item
 	struct dirent_item *item = malloc(sizeof(struct dirent_item));
@@ -106,11 +115,26 @@ void list_push_link(struct dirent_list *ents,
 		exit(1);
 	}
 
-	// Populate the source location of the link
-	lnk->source = strndup(ent->d_name, DIRENT_NAME_LENGTH);
-	if (!lnk->source) {
-		perror("strndup");
-		exit(1);
+	if (ents->full_path) {
+		int as_rv = asprintf(&lnk->source,
+				     "%s/%s",
+				     parent_dir,
+				     ent->d_name);
+		if (!as_rv) {
+			perror("asprintf");
+			exit(1);
+		}
+
+		lnk->source_len = (size_t) as_rv;
+	} else {
+		// Populate the source location of the link
+		lnk->source = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+		if (!lnk->source) {
+			perror("strndup");
+			exit(1);
+		}
+
+		lnk->source_len = DIRENT_NAME_LENGTH;
 	}
 
 	// Populate the destination of the link via readlink()
@@ -136,6 +160,7 @@ void list_push_link(struct dirent_list *ents,
 
 	free(fullpath);
 	lnk->destination = destination;
+	lnk->destination_len = DIRENT_NAME_LENGTH;
 
 	// Populate the dirent_item
 	struct dirent_item *item = malloc(sizeof(struct dirent_item));
@@ -154,7 +179,9 @@ void list_push_link(struct dirent_list *ents,
 	extend_list(ents);
 }
 
-void list_push_dir(struct dirent_list *ents, const struct dirent *ent)
+void list_push_dir(struct dirent_list *ents,
+		   const char *parent_dir,
+		   const struct dirent *ent)
 {
 	// Populate the directory path
 	struct dirent_dir *dir = malloc(sizeof(struct dirent_dir));
@@ -163,10 +190,25 @@ void list_push_dir(struct dirent_list *ents, const struct dirent *ent)
 		exit(1);
 	}
 
-	dir->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
-	if (!dir->path) {
-		perror("strndup");
-		exit(1);
+	if (ents->full_path) {
+		int as_rv = asprintf(&dir->path,
+				     "%s/%s",
+				     parent_dir,
+				     ent->d_name);
+		if (!as_rv) {
+			perror("asprintf");
+			exit(1);
+		}
+
+		dir->len = (size_t) as_rv;
+	} else {
+		dir->path = strndup(ent->d_name, DIRENT_NAME_LENGTH);
+		if (!dir->path) {
+			perror("strndup");
+			exit(1);
+		}
+
+		dir->len = DIRENT_NAME_LENGTH;
 	}
 
 	// Populate the dirent_item

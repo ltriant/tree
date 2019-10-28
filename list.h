@@ -10,7 +10,6 @@
 #elif defined(NAME_MAX)
 #define DIRENT_NAME_LENGTH NAME_MAX
 #else
-#error "unable to determine dirent d_name length"
 #define DIRENT_NAME_LENGTH 255
 #endif
 
@@ -24,18 +23,23 @@ enum dirent_type
 struct dirent_file
 {
 	char *path;
+	size_t len;
 	mode_t mode;
 };
 
 struct dirent_link
 {
 	char *source;
+	size_t source_len;
+
 	char *destination;
+	size_t destination_len;
 };
 
 struct dirent_dir
 {
 	char *path;
+	size_t len;
 };
 
 struct dirent_item
@@ -54,10 +58,11 @@ struct dirent_list
 	struct dirent_item **entities;
 	size_t cap;
 	size_t cur;
+	bool full_path;
 };
 
 // Constructor
-void list_init(struct dirent_list *);
+void list_init(struct dirent_list *, bool);
 
 // Determine if the list is empty
 bool list_is_empty(struct dirent_list *);
@@ -73,7 +78,9 @@ void list_push_link(struct dirent_list *,
 		    const struct dirent *);
 
 // Push a directory onto the end of the list
-void list_push_dir(struct dirent_list *, const struct dirent *);
+void list_push_dir(struct dirent_list *,
+		   const char *,
+		   const struct dirent *);
 
 // Destructor
 void list_destroy(struct dirent_list *);
