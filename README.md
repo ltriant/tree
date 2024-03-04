@@ -19,5 +19,5 @@ $ go build
 Or to build and install directly:
 
 ```
-$ go install github.com/ltriant/tree
+$ go install github.com/ltriant/tree@latest
 ```
